@@ -1,0 +1,1 @@
+This is a Flask Library that enables a developer to define database models, and the library will automatically generate CRUD endpoints. ;)

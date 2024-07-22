@@ -1,0 +1,2 @@
+
+from flask_mongo_crud.flask_mongo_crud import FlaskMongoCrud
