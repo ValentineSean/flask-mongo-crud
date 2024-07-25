@@ -42,24 +42,24 @@ class FlaskMongoCrud(object):
 
         # -------------------------------------------------------------------------------
 
-        routes_models = self.get_models(models_type="routes_models", project_root=project_root)
-        db_models = self.get_models(models_type="db_models", project_root=project_root)
-
         url_prefix = app_configs["url_prefix"]
+        models = self.get_models(project_root=project_root)
 
-        for model in routes_models:
-            app.route(f"{url_prefix}/{model}", methods=["GET", "POST"])(self.db_interface(
+        for model in models:
+            app.route(f"{url_prefix}/{model.get('route_model_name')}", methods=["GET", "POST"])(self.db_interface(
                 self.request,
-                db_models,
                 self.mongo,
-                model,
+                model.get('route_model_name'),
+                model.get("collection_name"),
+                model.get("model_class"),
                 id=None
             ))
-            app.route(f"{url_prefix}/{model}/<id>", methods=["GET", "PUT", "PATCH", "DELETE"])(self.db_interface(
+            app.route(f"{url_prefix}/{model.get('route_model_name')}/<id>", methods=["GET", "PUT", "PATCH", "DELETE"])(self.db_interface(
                 self.request,
-                db_models,
                 self.mongo,
-                model,
+                model.get('route_model_name'),
+                model.get("collection_name"),
+                model.get("model_class"),
                 id
             ))
 
@@ -93,7 +93,7 @@ class FlaskMongoCrud(object):
     
 
     # GET MODELS
-    def get_models(self, models_type, project_root):
+    def get_models(self, project_root):
         package_name = "models"
 
         files = os.listdir(package_name)
@@ -123,47 +123,41 @@ class FlaskMongoCrud(object):
                             db_model_name = db_model_name + f"_{split[x].lower()}"
                             x = x + 1
 
-                    if models_type == "routes_models":
-                        models.append(route_model_name)
+                    custom_name = None
+                    if hasattr(cls, "collection_name"):
+                        custom_name = cls.collection_name
 
                     else:
-                        custom_name = None
-                        if hasattr(cls, "collection_name"):
-                            custom_name = cls.collection_name
+                        custom_name = db_model_name
 
-                        else:
-                            custom_name = db_model_name
-
-
-                        models.append({
-                            "collection_name": custom_name,
-                            route_model_name: cls,
-                        })
+                    
+                    models.append({
+                        "route_model_name": route_model_name,
+                        "collection_name": custom_name,
+                        "model_class": cls,
+                    })
 
         return models
 
     # DB INTERFACE
-    def db_interface(self, request, models, mongo, model_name, id):
+    def db_interface(self, request, mongo, route_model_name, collection_name, model_class, id):
         if id == None:
             def _dynamic_function():
                 if request.method == "POST":
                     entity = request.json
 
-                    for model_x in models:
-                        if model_x.get(model_name) is not None:
+                    model_attributes_list = list(inspect.signature(model_class).parameters)
 
-                            model_attributes_list = list(inspect.signature(model_x.get(model_name)).parameters)
+                    new_entity = {}
 
-                            new_entity = {}
+                    for z in model_attributes_list:
+                        new_entity[z] = entity[z]
 
-                            for z in model_attributes_list:
-                                new_entity[z] = entity[z]
+                    # Add Data to DB
+                    new_entity_id = mongo.db[collection_name].insert_one(new_entity).inserted_id
 
-                            # Add Data to DB
-                            new_entity_id = mongo.db[model_x.get("collection_name")].insert_one(new_entity).inserted_id
-
-                            new_entity = mongo.db[model_x.get("collection_name")].find_one({"_id": ObjectId(new_entity_id)})
-                            new_entity = json.loads(dumps(new_entity))
+                    new_entity = mongo.db[collection_name].find_one({"_id": ObjectId(new_entity_id)})
+                    new_entity = json.loads(dumps(new_entity))
                     
                     return new_entity
                     
@@ -171,7 +165,7 @@ class FlaskMongoCrud(object):
                 elif request.method == "GET":
                     # Some logic here...
                     try:
-                        entities =  mongo.db[model_name].find()
+                        entities =  mongo.db[collection_name].find()
 
                         if entities:
                             entities = json.loads(dumps(entities))
@@ -185,7 +179,7 @@ class FlaskMongoCrud(object):
 
                     return entities
             
-            _dynamic_function.__name__ = model_name
+            _dynamic_function.__name__ = route_model_name
 
             return _dynamic_function
 
@@ -195,7 +189,7 @@ class FlaskMongoCrud(object):
                 if request.method == "GET":
                     # Some logic here...
                     try:
-                        entity =  mongo.db[model_name].find_one({"_id": ObjectId(id)})
+                        entity =  mongo.db[collection_name].find_one({"_id": ObjectId(id)})
 
                         if entity:
                             entity = json.loads(dumps(entity))
@@ -212,78 +206,71 @@ class FlaskMongoCrud(object):
                 elif request.method == "PUT":
                     entity = request.json
 
-                    for model_x in models:
-                        if model_x.get(model_name) is not None:
-                            
-                            model_attributes_list = list(inspect.signature(model_x.get(model_name)).parameters)
+                    model_attributes_list = list(inspect.signature(model_class).parameters)
 
-                            new_entity = {}
+                    new_entity = {}
 
-                            for z in model_attributes_list:
-                                if entity.get(z) is None:
-                                    new_entity[z] = None
-                                    continue
-                                new_entity[z] = entity[z]
+                    for z in model_attributes_list:
+                        if entity.get(z) is None:
+                            new_entity[z] = None
+                            continue
+                        new_entity[z] = entity[z]
 
-                            # Add Data to DB
-                            old_entity = mongo.db[model_x.get("collection_name")].find_one({"_id": ObjectId(id)})
+                    # Add Data to DB
+                    # old_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
 
-                            mongo.db[model_x.get("collection_name")].update_one(
-                                {"_id": ObjectId(id)},
-                                {"$set": new_entity},
-                                upsert=True
-                            )
+                    mongo.db[collection_name].update_one(
+                        {"_id": ObjectId(id)},
+                        {"$set": new_entity},
+                        upsert=True
+                    )
 
-                            new_entity = mongo.db[model_x.get("collection_name")].find_one({"_id": ObjectId(id)})
-                            new_entity = json.loads(dumps(new_entity))
+                    new_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
+                    new_entity = json.loads(dumps(new_entity))
                     
                     return new_entity
 
                 elif request.method == "PATCH":
                     entity = request.json
+                    
+                    model_attributes_list = list(inspect.signature(model_class).parameters)
 
-                    for model_x in models:
-                        if model_x.get(model_name) is not None:
-                            
-                            # model_attributes_list = dir(model_x[y]())
-                            model_attributes_list = list(inspect.signature(model_x.get(model_name)).parameters)
+                    new_entity = {}
 
-                            new_entity = {}
+                    for z in model_attributes_list:
+                        if entity.get(z) is None:
+                            continue
+                        new_entity[z] = entity[z]
 
-                            for z in model_attributes_list:
-                                if entity.get(z) is None:
-                                    continue
-                                new_entity[z] = entity[z]
+                    # Add Data to DB
+                    old_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
+                    if old_entity == None:
+                        return {
+                            "message": f"{route_model_name} not found"
+                        }
 
-                            # Add Data to DB
-                            old_entity = mongo.db[model_x.get("collection_name")].find_one({"_id": ObjectId(id)})
-                            if old_entity == None:
-                                return {
-                                    "message": f"{model_x.get(model_name)} not found"
-                                }
+                    mongo.db[collection_name].update_one(
+                        {"_id": ObjectId(id)},
+                        {"$set": new_entity},
+                    )
 
-                            mongo.db[model_x.get("collection_name")].update_one(
-                                {"_id": ObjectId(id)},
-                                {"$set": new_entity},
-                            )
-
-                            new_entity = mongo.db[model_x.get("collection_name")].find_one({"_id": ObjectId(id)})
-                            new_entity = json.loads(dumps(new_entity))
+                    new_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
+                    new_entity = json.loads(dumps(new_entity))
                     
                     return new_entity
 
                 elif request.method == "DELETE":
-                    old_entity = mongo.db[model_name].find_one({"_id": ObjectId(id)})
+                    old_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
                     if old_entity == None:
                         return {
-                            "message": f"{model_name} not found"
+                            "message": f"{route_model_name} not found"
                         }
 
-                    mongo.db[model_name].delete_one({"_id": ObjectId(id)})
+                    mongo.db[collection_name].delete_one({"_id": ObjectId(id)})
                     return {
-                        "message": f"{model_name} deleted successfully"
+                        "message": f"{route_model_name} deleted successfully"
                     }
                 
-            _dynamic_function.__name__ = model_name + "_one"
+            _dynamic_function.__name__ = route_model_name + "-one"
 
             return _dynamic_function
