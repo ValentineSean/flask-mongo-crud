@@ -35,18 +35,18 @@ class FlaskMongoCrud(object):
             Get Caller Absolute Path
             But Need to figure out how to accommodate other OS (MacOS, Linux, etc)
         """
-        callee_abs_path = os.path.abspath((inspect.stack()[0])[1]) # No use at the moment
+        # callee_abs_path = os.path.abspath((inspect.stack()[0])[1]) # No use at the moment
         abs_path = os.path.abspath((inspect.stack()[1])[1])
         caller_directory = os.path.dirname(abs_path)
         project_root = caller_directory.split("\\")[-1]
 
         # -------------------------------------------------------------------------------
 
-        url_prefix = app_configs["url_prefix"]
+        root_url = app_configs.get("root_url")
         models = self.get_models(project_root=project_root)
 
         for model in models:
-            app.route(f"{url_prefix}/{model.get('route_model_name')}", methods=["GET", "POST"])(self.db_interface(
+            app.route(f"{root_url}{model['model_url_prefix']}/{model.get('route_model_name')}", methods=["GET", "POST"])(self.db_interface(
                 self.request,
                 self.mongo,
                 model.get('route_model_name'),
@@ -54,7 +54,7 @@ class FlaskMongoCrud(object):
                 model.get("model_class"),
                 id=None
             ))
-            app.route(f"{url_prefix}/{model.get('route_model_name')}/<id>", methods=["GET", "PUT", "PATCH", "DELETE"])(self.db_interface(
+            app.route(f"{root_url}{model['model_url_prefix']}/{model.get('route_model_name')}/<id>", methods=["GET", "PUT", "PATCH", "DELETE"])(self.db_interface(
                 self.request,
                 self.mongo,
                 model.get('route_model_name'),
@@ -87,6 +87,13 @@ class FlaskMongoCrud(object):
         url_prefix = self.app.config.get("URL_PREFIX")
         if url_prefix:
             options["url_prefix"] = url_prefix
+
+        # ROOT URL
+        root_url = self.app.config.get("ROOT_URL")
+        if root_url:
+            options["root_url"] = root_url
+        else:
+            options["root_url"] = ""
 
 
         return options
@@ -122,7 +129,13 @@ class FlaskMongoCrud(object):
                             route_model_name = route_model_name + f"-{split[x].lower()}"
                             db_model_name = db_model_name + f"_{split[x].lower()}"
                             x = x + 1
+                    
+                    # Check if there is Model URL Prefix
+                    model_url_prefix = ""
+                    if hasattr(cls, "model_url_prefix"):
+                        model_url_prefix = cls.model_url_prefix
 
+                    # Check if there is Custom Collection Name
                     custom_name = None
                     if hasattr(cls, "collection_name"):
                         custom_name = cls.collection_name
@@ -132,6 +145,7 @@ class FlaskMongoCrud(object):
 
                     
                     models.append({
+                        "model_url_prefix": model_url_prefix,
                         "route_model_name": route_model_name,
                         "collection_name": custom_name,
                         "model_class": cls,
