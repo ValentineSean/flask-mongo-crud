@@ -8,6 +8,8 @@ import traceback
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 
+from .utils import string_to_bool
+
 # Provides a CRUD System Integrated to Flask
 class FlaskMongoCrud(object):
     def __init__(self, app=None, mongo=None) -> None:
@@ -43,7 +45,7 @@ class FlaskMongoCrud(object):
         # -------------------------------------------------------------------------------
 
         root_url = app_configs.get("root_url")
-        models = self.get_models(project_root=project_root)
+        models = self.get_models(project_root=project_root, models_directory=app_configs["models_directory"])
 
         for model in models:
             app.route(f"{root_url}{model['model_url_prefix']}/{model.get('route_model_name')}", methods=["GET", "POST"])(self.db_interface(
@@ -84,6 +86,12 @@ class FlaskMongoCrud(object):
         if database_name:
             options["database_name"] = database_name
 
+        models_directory = self.app.config.get("MODELS_DIRECTORY")
+        if models_directory:
+            options["models_directory"] = models_directory
+        else:
+            options["models_directory"] = "models"
+
         url_prefix = self.app.config.get("URL_PREFIX")
         if url_prefix:
             options["url_prefix"] = url_prefix
@@ -100,8 +108,8 @@ class FlaskMongoCrud(object):
     
 
     # GET MODELS
-    def get_models(self, project_root):
-        package_name = "models"
+    def get_models(self, project_root, models_directory):
+        package_name = models_directory
 
         files = os.listdir(package_name)
 
@@ -116,7 +124,7 @@ class FlaskMongoCrud(object):
 
                 module_name = ".." + package_name + "." + file_name
                 
-                for name, cls, in inspect.getmembers(importlib.import_module(module_name, package=f"{project_root}.models"), inspect.isclass):
+                for name, cls, in inspect.getmembers(importlib.import_module(module_name, package=f"{project_root}.{models_directory}"), inspect.isclass):
                     split = re.sub('([A-Z][a-z]+)', r' \1', re.sub('([A-Z]+)', r' \1', name)).split()
 
                     route_model_name = split[0].lower()
@@ -158,40 +166,62 @@ class FlaskMongoCrud(object):
         if id == None:
             def _dynamic_function():
                 if request.method == "POST":
-                    entity = request.json
+                    document = request.json
 
                     model_attributes_list = list(inspect.signature(model_class).parameters)
 
-                    new_entity = {}
+                    new_document = dict()
 
                     for z in model_attributes_list:
-                        new_entity[z] = entity[z]
+                        new_document[z] = document[z]
 
                     # Add Data to DB
-                    new_entity_id = mongo.db[collection_name].insert_one(new_entity).inserted_id
+                    new_document_id = mongo.db[collection_name].insert_one(new_document).inserted_id
 
-                    new_entity = mongo.db[collection_name].find_one({"_id": ObjectId(new_entity_id)})
-                    new_entity = json.loads(dumps(new_entity))
+                    new_document = mongo.db[collection_name].find_one({"_id": ObjectId(new_document_id)})
+                    new_document = json.loads(dumps(new_document))
                     
-                    return new_entity
+                    return new_document
                     
 
                 elif request.method == "GET":
-                    # Some logic here...
-                    try:
-                        entities =  mongo.db[collection_name].find()
+                    has_pagination = string_to_bool(request.args.get('pagination'))
+                    page = request.args.get("page")
+                    limit = request.args.get("limit")
 
-                        if entities:
-                            entities = json.loads(dumps(entities))
+                    try:
+                        response = dict()
+
+                        if has_pagination:
+                            if page is None and limit is None:
+                                documents =  mongo.db[collection_name].find()
+
+                            elif page is None and limit:
+                                documents = mongo.db[collection_name].find().limit(int(limit))
+                            
+                            else:
+                                offset = (int(page) - 1) * int(limit)
+                                documents = mongo.db[collection_name].find().skip(offset).limit(int(limit))
+                        else:
+                            page = None
+                            documents = mongo.db[collection_name].find().limit(int(limit)) if limit else mongo.db[collection_name].find()
+
+                        if documents:
+                            documents = json.loads(dumps(documents))
 
                         else:
-                            entities = []
+                            documents = list()
 
                     except:
                         traceback.print_exc()
-                        entities = []
-
-                    return entities
+                        documents = list()
+                    
+                    response["data"] = documents
+                    response["count"] = len(documents)
+                    response["current_page"] = page
+                    response["has_pagination"] = has_pagination
+                    
+                    return response
             
             _dynamic_function.__name__ = route_model_name
 
@@ -201,81 +231,77 @@ class FlaskMongoCrud(object):
             def _dynamic_function(id):
 
                 if request.method == "GET":
-                    # Some logic here...
                     try:
-                        entity =  mongo.db[collection_name].find_one({"_id": ObjectId(id)})
+                        document =  mongo.db[collection_name].find_one({"_id": ObjectId(id)})
 
-                        if entity:
-                            entity = json.loads(dumps(entity))
+                        if document:
+                            document = json.loads(dumps(document))
 
                         else:
-                            entity = {}
+                            document = dict()
 
                     except:
                         traceback.print_exc()
-                        entity = {}
+                        document = dict()
 
-                    return entity
+                    return document
 
                 elif request.method == "PUT":
-                    entity = request.json
+                    document = request.json
 
                     model_attributes_list = list(inspect.signature(model_class).parameters)
 
-                    new_entity = {}
+                    new_document = dict()
 
                     for z in model_attributes_list:
-                        if entity.get(z) is None:
-                            new_entity[z] = None
+                        if document.get(z) is None:
+                            new_document[z] = None
                             continue
-                        new_entity[z] = entity[z]
-
-                    # Add Data to DB
-                    # old_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
+                        new_document[z] = document[z]
 
                     mongo.db[collection_name].update_one(
                         {"_id": ObjectId(id)},
-                        {"$set": new_entity},
+                        {"$set": new_document},
                         upsert=True
                     )
 
-                    new_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
-                    new_entity = json.loads(dumps(new_entity))
+                    new_document = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
+                    new_document = json.loads(dumps(new_document))
                     
-                    return new_entity
+                    return new_document
 
                 elif request.method == "PATCH":
-                    entity = request.json
+                    document = request.json
                     
                     model_attributes_list = list(inspect.signature(model_class).parameters)
 
-                    new_entity = {}
+                    new_document = dict()
 
                     for z in model_attributes_list:
-                        if entity.get(z) is None:
+                        if document.get(z) is None:
                             continue
-                        new_entity[z] = entity[z]
+                        new_document[z] = document[z]
 
                     # Add Data to DB
-                    old_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
-                    if old_entity == None:
+                    old_document = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
+                    if old_document == None:
                         return {
                             "message": f"{route_model_name} not found"
                         }
 
                     mongo.db[collection_name].update_one(
                         {"_id": ObjectId(id)},
-                        {"$set": new_entity},
+                        {"$set": new_document},
                     )
 
-                    new_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
-                    new_entity = json.loads(dumps(new_entity))
+                    new_document = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
+                    new_document = json.loads(dumps(new_document))
                     
-                    return new_entity
+                    return new_document
 
                 elif request.method == "DELETE":
-                    old_entity = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
-                    if old_entity == None:
+                    old_document = mongo.db[collection_name].find_one({"_id": ObjectId(id)})
+                    if old_document == None:
                         return {
                             "message": f"{route_model_name} not found"
                         }
