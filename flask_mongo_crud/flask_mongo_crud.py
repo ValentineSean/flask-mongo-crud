@@ -29,8 +29,6 @@ class FlaskMongoCrud(object):
 
         app_configs = self._load_config()
 
-        app.config["MONGO_URI"] = f"mongodb://{app_configs['db_host']}/{app_configs['database_name']}"
-
         mongo.init_app(app)
 
         """
@@ -40,7 +38,8 @@ class FlaskMongoCrud(object):
         # callee_abs_path = os.path.abspath((inspect.stack()[0])[1]) # No use at the moment
         abs_path = os.path.abspath((inspect.stack()[1])[1])
         caller_directory = os.path.dirname(abs_path)
-        project_root = caller_directory.split("\\")[-1]
+        caller_directory = caller_directory.replace("\\", ("/"))
+        project_root = caller_directory.split("/")[-1]
 
         # -------------------------------------------------------------------------------
 

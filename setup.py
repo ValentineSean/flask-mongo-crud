@@ -10,7 +10,7 @@ classifiers = [
 
 setup(
     name="flask-mongo-crud",
-    version="0.0.19",
+    version="0.0.20",
     description="This is a Flask Library that enables a developer to define mongo database models, and the library will automatically generate CRUD endpoints basing on Models defined. ;)",
     long_description=open("README.txt").read() + "\n\n" + open("CHANGELOG.txt").read(),
     url="",
