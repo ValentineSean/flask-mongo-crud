@@ -7,7 +7,8 @@
 - Allows to paginate when getting many documents from collection.
 
 ## Installation
-- [x] pip install flask-mongo-crud
+```bash
+pip install flask-mongo-crud
 
 ## Configuration
 
