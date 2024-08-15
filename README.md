@@ -9,7 +9,7 @@
 ## Installation
 ```bash
 pip install flask-mongo-crud
-````
+```
 
 ## Configuration
 
