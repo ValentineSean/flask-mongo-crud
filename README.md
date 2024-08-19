@@ -20,7 +20,7 @@ pip install flask-mongo-crud
         ~~~python
         app.config[MODELS_DIRECTORY] = "<CUSTOM_NAME>"
         ~~~
-        default “models” directory will be used.
+        - then, default “models” directory will be used.
         - This is where models files are defined.
         - Inside these files declare models classes and their configurations such as:
             - *collection_name [OPTIONAL]*
