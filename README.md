@@ -32,6 +32,7 @@ pip install flask-mongo-crud
             collection_name = "professor_subjects"
             model_url_prefix = "/professor-subject-test"
 
+            # These are document fields
             def __init__(self, professor_first_name, professor_last_name, subject_name):
                 self.professor_first_name = professor_first_name
                 self.professor_last_name = professor_last_name
