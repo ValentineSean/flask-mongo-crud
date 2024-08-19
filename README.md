@@ -16,7 +16,11 @@ pip install flask-mongo-crud
 - Empty __init__.py file required in project root directory.
 - Models:
     - Models directory is required in the project root directory:
-    - If custom name Models directory is not defined, as **app.config[MODELS_DIRECTORY] = "<CUSTOM_NAME>"**, default “models” directory will be used.
+    - If custom name Models directory is not defined, as:
+        ~~~python
+        app.config[MODELS_DIRECTORY] = "<CUSTOM_NAME>"
+        ~~~
+        default “models” directory will be used.
         - This is where models files are defined.
         - Inside these files declare models classes and their configurations such as:
             - *collection_name [OPTIONAL]*
