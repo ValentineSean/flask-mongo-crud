@@ -48,7 +48,7 @@ pip install flask-mongo-crud
 
     app = Flask(__name__)
     # If models directory is not defined, default "models" directory will be used
-    app.config["MODELS_DIRECTORY"] = "db_classes"
+    app.config["MODELS_DIRECTORY"] = "<CUSTOM_NAME>"
     # If root URL is not defined, generated endpoints will not have a root URL
     app.config["ROOT_URL"] = "/flask-mongo-crud/v1"
 
@@ -63,7 +63,36 @@ pip install flask-mongo-crud
         app.run(debug=True)
     ```
 
-## Generated Endpoints Examples
+## Generated Endpoints Examples and HTTP Methods:
+- The following generated endpoints will be using model snippet defined earlier in **Configuration** as well **Basic Application** sections.
+- The following generated endpoints are after application base URL:
+    `<IP_ADDRESS>:<PORT_NUMBER>`
+- Basic complete URL looks like:
+    `<IP_ADDRESS>:<PORT_NUMBER>/<ROOT_URL>/<MODEL_URL_PREFIX>/<RESOURCE_NAME>`
+    or
+    `<IP_ADDRESS>:<PORT_NUMBER>/<ROOT_URL>/<MODEL_URL_PREFIX>/<RESOURCE_NAME>/<RESOURCE_IDENTIFIER>`
+
+### POST (To be continued...):
+- Saves new document into the database
+- Using model
+- Generated endpoint:
+    - `/flask-mongo-crud/v1/professor-subject-test/professor-subject`
+    - In case ROOT_URL is not specified:
+    - In case MODEL_URL_PREFIX is not specified:
+- JSON Payload Example:
+    ```json
+    {
+        "professor_first_name": "Foo"
+    }
+    ```
+
+### GET
+
+### PUT
+
+### PATCH
+
+### DELETE
 
 ## Examples
 
