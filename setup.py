@@ -4,15 +4,22 @@ classifiers = [
 	"Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3"
 ]
 
+with open("README.rst", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     name="flask-mongo-crud",
-    version="0.0.20",
-    description="This is a Flask Library that enables a developer to define mongo database models, and the library will automatically generate CRUD endpoints basing on Models defined. ;)",
-    long_description=open("README.txt").read() + "\n\n" + open("CHANGELOG.txt").read(),
+    version="0.0.23",
+    description="Automatically generates CRUD endpoints from defined models",
+    # long_description=open("README.txt").read() + "\n\n" + open("CHANGELOG.txt").read(),
+    long_description=long_description,
+    long_description_content_type="text/x-rst",
     url="",
     author="Valentine Sean Chanengeta",
     author_email="",

@@ -63,7 +63,7 @@ pip install flask-mongo-crud
         app.run(debug=True)
     ```
 
-## API / HTTP Methods / Endpoints
+## Generated Endpoints Examples
 
 ## Examples
 
