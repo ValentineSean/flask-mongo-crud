@@ -83,8 +83,7 @@ pip install flask-mongo-crud
 - RESOURCE_NAME is automatically generated, and a developer can not customize it.
 - RESOURCE_IDENTIFIER should be the document ID.
 - Given the generated URL:
-
-`localhost:5000/flask-mongo-crud/v1/professor-subject-test/professor-subject/66c40a7d1e7029dbdf77df02`:
+    `localhost:5000/flask-mongo-crud/v1/professor-subject-test/professor-subject/66c40a7d1e7029dbdf77df02`:
     - "/professor-subject" is the RESOURCE_NAME.
     - "/66c40a7d1e7029dbdf77df02" is the RESOURCE_IDENTIFIER.
     - In case ROOT_URL is not specified:
