@@ -65,28 +65,49 @@ pip install flask-mongo-crud
 
 ## Generated Endpoints Examples and HTTP Methods:
 - The following generated endpoints will be using model snippet defined earlier in **Configuration** as well **Basic Application** sections.
-- The following generated endpoints are after application base URL:
+- These endpoints are after application base URL:
     `<IP_ADDRESS>:<PORT_NUMBER>`
 - Basic complete URL looks like:
+    
     `<IP_ADDRESS>:<PORT_NUMBER>/<ROOT_URL>/<MODEL_URL_PREFIX>/<RESOURCE_NAME>`
     or
     `<IP_ADDRESS>:<PORT_NUMBER>/<ROOT_URL>/<MODEL_URL_PREFIX>/<RESOURCE_NAME>/<RESOURCE_IDENTIFIER>`
-
-### POST (To be continued...):
-- Saves new document into the database
-- Using model
-- Generated endpoint:
-    - `/flask-mongo-crud/v1/professor-subject-test/professor-subject`
+- RESOURCE_NAME is automatically generated, and a developer can not customize it.
+- RESOURCE_IDENTIFIER should be the document ID.
+- Given the generated URL, `localhost:5000/flask-mongo-crud/v1/professor-subject-test/professor-subject/66c40a7d1e7029dbdf77df02`:
+    - "/professor-subject" is the RESOURCE_NAME.
+    - "/66c40a7d1e7029dbdf77df02" is the RESOURCE_IDENTIFIER.
     - In case ROOT_URL is not specified:
+        - In the above URL, ROOT_URL is `/flask-mongo-crud/v1`.
+        - The URL without ROOT_URL is `/professor-subject-test/professor-subject`
     - In case MODEL_URL_PREFIX is not specified:
+        - In the above URL, MODEL_URL_PREFIX is `/professor-subject-test`
+        - The URL without MODEL_URL_PREFIX is `/flask-mongo-crud/v1/professor-subject`
+    - In case both ROOT_URL and MODEL_URL_PREFIX are not specified:
+        - The URL without both is `/professor-subject`
+        - It contains only the RESOURCE_NAME.
+
+#### POST
+- Saves new document into the database
+- Only saves one document at a time.
+- Supports only JSON data.
+- Fields are nullable.
+
 - JSON Payload Example:
     ```json
     {
-        "professor_first_name": "Foo"
+        "professor_first_name": "Foo",
+        "professor_last_name": "Bar",
+        "subject_name": "Comp Science"
     }
     ```
 
-### GET
+#### GET
+- Retrieves documents from the database.
+- Can retrieve only one document or a list of documents.
+- To retrieve only one document, include RESOURCE_IDENTIFIER in the URL.
+- This RESOURCE_IDENTIFIER will be used to identify that one document.
+- If RESOURCE_IDENTIFIER is not provided, list of documents will be retrieved.
 
 ### PUT
 

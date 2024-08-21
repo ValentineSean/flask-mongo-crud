@@ -15,7 +15,7 @@ with open("README.rst", "r", encoding="utf-8") as fh:
 
 setup(
     name="flask-mongo-crud",
-    version="0.0.23",
+    version="0.0.24",
     description="Automatically generates CRUD endpoints from defined models",
     # long_description=open("README.txt").read() + "\n\n" + open("CHANGELOG.txt").read(),
     long_description=long_description,

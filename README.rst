@@ -1,7 +1,7 @@
 =================================
 Flask-Mongo-CRUD
 =================================
-Flask-Mongo-CRUD is a Flask extension which generates CRUD endpoints out of the box from defined models.
+flask-mongo-crud is a Flask extension which generates CRUD endpoints out of the box from defined models.
 
 Features
 ===============
@@ -13,7 +13,7 @@ Features
 
 Installation
 ===============
-You can install Flask-Mongo-CRUD via Python Package Index:
+You can install flask-mongo-crud via Python Package Index:
 
 .. code:: bash
 

@@ -172,7 +172,7 @@ class FlaskMongoCrud(object):
                     new_document = dict()
 
                     for z in model_attributes_list:
-                        new_document[z] = document[z]
+                        new_document[z] = document.get(z)
 
                     # Add Data to DB
                     new_document_id = mongo.db[collection_name].insert_one(new_document).inserted_id
