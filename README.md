@@ -119,11 +119,11 @@ pip install flask-mongo-crud
 - If RESOURCE_IDENTIFIER is not provided, list of documents will be retrieved.
 - Developer can opt for pagination when retrieving many documents.
 
-##### Pagination:
-    - To paginate, provide the following query parameters:
-        - **pagination** = *true*
-        - **limit** = "number of documents" per page. Should be integer greater than 0
-        - **page** = "page number". Should be integer greater than 0
+    ##### Pagination:
+        - To paginate, provide the following query parameters:
+            - **pagination** = *true*
+            - **limit** = "number of documents" per page. Should be integer greater than 0
+            - **page** = "page number". Should be integer greater than 0
 
 #### PUT
 - Updates one document at a time.
